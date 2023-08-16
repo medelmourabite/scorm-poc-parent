@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scorm Parent</title>
+    <style>
+      iframe {
+        width: 100%;
+        height: 600px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SCORM parent</h1>
+    <pre id="result"></pre>
+    <pre id="completion-status"></pre>
+
+    <button onclick="getCompletionStatus()">get completion status</button>
+    <br />
+    <button onclick="openCourse(0)">show first course</button>
+    <button onclick="openCourse(1)">show second course</button>
+
+    <iframe id="iframe"></iframe>
+
+    <!-- <script type="text/javascript" src="js/scorm-again.js"></script> -->
+    <script>
+      //   console.log('parent');
+      const API =
+        window.API ||
+        window.opener?.API ||
+        window.parent.API ||
+        window.opener?.parent?.API;
+      console.log(API);
+    </script>
+    <script>
+      let learnerId = 'USER_1'; // API.learnerId || API.LMSGetValue('cmi.core.student_id');
+      let courses = [
+        'ChildCourse12_v0.0.4_2023-08-1536aaeff9-ba92-40d0-9dac-ab0df4f68062',
+        'ChildCourse12_v0.0.4_2023-08-157a8e205f-e778-4bd0-b834-c02a87ec64c6',
+      ];
+      window.openedRegistration = null;
+
+      const SERVER_URL = 'https://sore-plum-starfish-fez.cyclic.cloud';
+      async function openCourse(courseIndex) {
+        const response = await fetch(
+          `${SERVER_URL}/registration/launch-link?learnerId=${learnerId}&courseId=${courses[courseIndex]}`,
+          { method: 'GET' }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+        const data = await response.json();
+
+        console.log(data);
+        window.openedRegistration = data.registrationId;
+        const iframe = document.getElementById('iframe');
+        iframe.src = data.launchLink;
+      }
+
+      async function getCompletionStatus() {
+        const registrationId = window.openedRegistration;
+
+        const response = await fetch(
+          `${SERVER_URL}/registration/completion-status?registrationId=${registrationId}`,
+          { method: 'GET' }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+        const data = await response.json();
+        console.log(data);
+        const pre = document.getElementById('result');
+        pre.innerText = JSON.stringify(data, null, 2);
+      }
+
+      //   API.on('LMSInitialize', function (data) {
+      //     console.log('Parent: LMSInitialize', data);
+      //   });
+      //   window.API.on('LMSSetValue.cmi.*', function (CMIElement, value) {
+      //     console.log('Parent: LMSSetValue', CMIElement, value);
+      //   });
+      //   API.on('LMSCommit', function (data) {
+      //     console.log('Parent: LMSCommit', data);
+      //   });
+
+      //   var settings = {
+      //     lmsCommitUrl: 'https://cloud.scorm.com/api?method=rustici.debug.commit',
+      //     requestHandler: function (data) {
+      //       console.log('Parent: requestHandler', data);
+      //       const pre = document.getElementById('cmi');
+      //       pre.innerText = JSON.stringify(data, null, 2);
+      //     },
+      //   };
+
+      //   window.API = new Scorm12API(settings);
+
+      //   const json = {
+      //     core: {
+      //       student_id: '123456',
+      //       student_name: 'John Doe',
+      //     },
+      //   };
+      //   console.log('json', json);
+      //   window.API.loadFromJSON(json);
+    </script>
+  </body>
+</html>
